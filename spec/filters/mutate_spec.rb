@@ -954,6 +954,354 @@ describe LogStash::Filters::Mutate do
     end
   end
 
+  describe "convert test types conversion" do
+    context "to string" do
+      config <<-CONFIG
+        filter {
+          mutate { convert => { "a"  => "string" } }
+        }
+      CONFIG
+
+      # 123
+      # Integer and Long
+      sample({ "a" => 123 }) do
+        expect(subject.get("a")).to be_a(String).and eq("123")
+      end
+      # Float and Double
+      sample({ "a" => Float(123.0) }) do
+        expect(subject.get("a")).to be_a(String).and eq("123.0")
+      end
+      # String
+      sample({ "a" => "123" }) do
+        expect(subject.get("a")).to be_a(String).and eq("123")
+      end
+      sample({ "a" => "0x7b" }) do
+        expect(subject.get("a")).to be_a(String).and eq("0x7b")
+      end
+      sample({ "a" => "123.0" }) do
+        expect(subject.get("a")).to be_a(String).and eq("123.0")
+      end
+      sample({ "a" => "1.230000e+02" }) do
+        expect(subject.get("a")).to be_a(String).and eq("1.230000e+02")
+      end
+
+      # 123.45
+      # Float and Double
+      sample({ "a" => Float(123.45) }) do
+        expect(subject.get("a")).to be_a(String).and eq("123.45")
+      end
+      # String
+      sample({ "a" => "123.45" }) do
+        expect(subject.get("a")).to be_a(String).and eq("123.45")
+      end
+      sample({ "a" => "1.234500e+02" }) do
+        expect(subject.get("a")).to be_a(String).and eq("1.234500e+02")
+      end
+      sample({ "a" => "0x1.edcdp6" }) do
+        expect(subject.get("a")).to be_a(String).and eq( "0x1.edcdp6" )
+      end
+
+      # 16777217
+      # Integer and Long
+      sample({ "a" => 16777217 }) do
+        expect(subject.get("a")).to be_a(String).and eq("16777217")
+      end
+      # Float and Double  # !!
+      sample({ "a" => 1.6777217E7 }) do
+        expect(subject.get("a")).to be_a(String).and eq("16777217.0")
+      end
+      # String
+      sample({ "a" => "16777217" }) do
+        expect(subject.get("a")).to be_a(String).and eq("16777217")
+      end
+      sample({ "a" => "16777217.0" }) do
+        expect(subject.get("a")).to be_a(String).and eq("16777217.0")
+      end
+
+      # 2147483648
+      # Long
+      sample({ "a" => 2147483648 }) do
+        expect(subject.get("a")).to be_a(String).and eq("2147483648")
+      end
+      # Double  # !!
+      sample({ "a" => 2.147483648E9 }) do
+        expect(subject.get("a")).to be_a(String).and eq("2147483648.0")
+      end
+      # String
+      sample({ "a" => "2147483648" }) do
+        expect(subject.get("a")).to be_a(String).and eq("2147483648")
+      end
+      sample({ "a" => "2147483648.0" }) do
+        expect(subject.get("a")).to be_a(String).and eq("2147483648.0")
+      end
+
+      # 9007199254740993
+      # Long
+      sample({ "a" => 9007199254740993 }) do
+        expect(subject.get("a")).to be_a(String).and eq("9007199254740993")
+      end
+      # String
+      sample({ "a" => "9007199254740993" }) do
+        expect(subject.get("a")).to be_a(String).and eq("9007199254740993")
+      end
+      sample({ "a" => "9007199254740993.0" }) do
+        expect(subject.get("a")).to be_a(String).and eq("9007199254740993.0")
+      end
+
+      # 9223372036854775808
+      # String
+      sample({ "a" => "9223372036854775808" }) do
+        expect(subject.get("a")).to be_a(String).and eq("9223372036854775808")
+      end
+      sample({ "a" => "9223372036854775808.0" }) do
+        expect(subject.get("a")).to be_a(String).and eq("9223372036854775808.0")
+      end
+
+      # 680564693277057720000000000000000000000
+      # String
+      sample({ "a" => "680564693277057720000000000000000000000" }) do
+        expect(subject.get("a")).to be_a(String).and eq("680564693277057720000000000000000000000")
+      end
+      sample({ "a" => "680564693277057720000000000000000000000.0" }) do
+        expect(subject.get("a")).to be_a(String).and eq("680564693277057720000000000000000000000.0")
+      end
+    end
+
+    context "to integer" do
+      config <<-CONFIG
+        filter {
+          mutate { convert => { "a"  => "integer" } }
+        }
+      CONFIG
+
+      # 123
+      # Integer and Long
+      sample({ "a" => 123 }) do
+        expect(subject.get("a")).to be_a(Integer).and eq(123)
+      end
+      # Float and Double  # !!
+      sample({ "a" => Float(123.0) }) do
+        expect(subject.get("a")).to be_a(Integer).and eq(123)
+      end
+      # String
+      sample({ "a" => "123" }) do
+        expect(subject.get("a")).to be_a(Integer).and eq(123)
+      end
+      # !!
+      sample({ "a" => "0x7b" }) do
+        expect(subject.get("a")).to be_a(Integer).and eq(0)
+      end
+      # !!
+      sample({ "a" => "123.0" }) do
+        expect(subject.get("a")).to be_a(Integer).and eq(123)
+      end
+      # !!
+      sample({ "a" => "1.230000e+02" }) do
+        expect(subject.get("a")).to be_a(Integer).and eq(1)
+      end
+
+      # 123.45  # !!
+      # Float and Double
+      sample({ "a" => Float(123.45) }) do
+        expect(subject.get("a")).to be_a(Integer).and eq(123)
+      end
+      # String
+      sample({ "a" => "123.45" }) do
+        expect(subject.get("a")).to be_a(Integer).and eq(123)
+      end
+      sample({ "a" => "1.234500e+02" }) do
+        expect(subject.get("a")).to be_a(Integer).and eq(1)
+      end
+      sample({ "a" => "0x1.edcdp6" }) do
+        expect(subject.get("a")).to be_a(Integer).and eq(0)
+      end
+
+      # 16777217
+      # Integer and Long
+      sample({ "a" => 16777217 }) do
+        expect(subject.get("a")).to be_a(Integer).and eq(16777217)
+      end
+      # Double  # !!
+      sample({ "a" => 1.6777217E7 }) do
+        expect(subject.get("a")).to be_a(Integer).and eq(16777217)
+      end
+      # String
+      sample({ "a" => "16777217" }) do
+        expect(subject.get("a")).to be_a(Integer).and eq(16777217)
+      end
+      # !!
+      sample({ "a" => "16777217.0" }) do
+        expect(subject.get("a")).to be_a(Integer).and eq(16777217)
+      end
+
+      # 2147483648    # !!
+      # Long
+      sample({ "a" => 2147483648 }) do
+        expect(subject.get("a")).to be_a(Integer).and eq(2147483648)
+      end
+      # Double
+      sample({ "a" => 2.147483648E9 }) do
+        expect(subject.get("a")).to be_a(Integer).and eq(2147483648)
+      end
+      # String
+      sample({ "a" => "2147483648" }) do
+        expect(subject.get("a")).to be_a(Integer).and eq(2147483648)
+      end
+      sample({ "a" => "2147483648.0" }) do
+        expect(subject.get("a")).to be_a(Integer).and eq(2147483648)
+      end
+
+      # 9007199254740993  # !!
+      # Long
+      sample({ "a" => 9007199254740993 }) do
+        expect(subject.get("a")).to be_a(Integer).and eq(9007199254740993)
+      end
+      # String
+      sample({ "a" => "9007199254740993" }) do
+        expect(subject.get("a")).to be_a(Integer).and eq(9007199254740993)
+      end
+      sample({ "a" => "9007199254740993.0" }) do
+        expect(subject.get("a")).to be_a(Integer).and eq(9007199254740993)
+      end
+
+      # 9223372036854775808  # !!
+      # String
+      sample({ "a" => "9223372036854775808" }) do
+        expect(subject.get("a")).to be_a(Integer).and eq(9223372036854775808)
+      end
+      sample({ "a" => "9223372036854775808.0" }) do
+        expect(subject.get("a")).to be_a(Integer).and eq(9223372036854775808)
+      end
+
+      # 680564693277057720000000000000000000000  # !!
+      # String
+      sample({ "a" => "680564693277057720000000000000000000000" }) do
+        expect(subject.get("a")).to be_a(Integer).and eq(680564693277057720000000000000000000000)
+      end
+      sample({ "a" => "680564693277057720000000000000000000000.0" }) do
+        expect(subject.get("a")).to be_a(Integer).and eq(680564693277057720000000000000000000000)
+      end
+    end
+
+    context "to float" do
+      config <<-CONFIG
+        filter {
+          mutate { convert => { "a"  => "float" } }
+        }
+      CONFIG
+
+      # 123
+      # Integer and Long
+      # Ruby has no long type
+      sample({ "a" => 123 }) do
+        expect(subject.get("a")).to be_a(Float).and eq(123.0)
+      end
+      # Float and Double
+      # Ruby has no double type
+      sample({ "a" => Float(123) }) do
+        expect(subject.get("a")).to be_a(Float).and eq(123.0)
+      end
+      # String
+      sample({ "a" => "123" }) do
+        expect(subject.get("a")).to be_a(Float).and eq(123.0)
+      end
+      # !!
+      sample({ "a" => "0x7b" }) do
+        expect(subject.get("a")).to be_a(Float).and eq(0.0)
+      end
+      sample({ "a" => "123.0" }) do
+        expect(subject.get("a")).to be_a(Float).and eq(123.0)
+      end
+      sample({ "a" => "1.230000e+02" }) do
+        expect(subject.get("a")).to be_a(Float).and eq(123.0)
+      end
+
+      # 123.45
+      # Float and Double
+      sample({ "a" => Float(123.45) }) do
+        expect(subject.get("a")).to be_a(Float).and eq(123.45)
+      end
+      # String
+      sample({ "a" => "123.45" }) do
+        expect(subject.get("a")).to be_a(Float).and eq(123.45)
+      end
+      sample({ "a" => "1.234500e+02" }) do
+        expect(subject.get("a")).to be_a(Float).and eq(123.45)
+      end
+      # !!
+      sample({ "a" => "0x1.edcdp6" }) do
+        expect(subject.get("a")).to be_a(Float).and eq(0.0)
+      end
+
+      # 16777217
+      # Integer and Long
+      sample({ "a" => 16777217 }) do
+        expect(subject.get("a")).to be_a(Float).and eq(1.6777217E7)
+      end
+      # Float and Double
+      sample({ "a" => 1.6777217E7 }) do
+        expect(subject.get("a")).to be_a(Float).and eq(1.6777217E7)
+      end
+      # String
+      sample({ "a" => "16777217" }) do
+        expect(subject.get("a")).to be_a(Float).and eq(1.6777217E7)
+      end
+      sample({ "a" => "16777217.0" }) do
+        expect(subject.get("a")).to be_a(Float).and eq(1.6777217E7)
+      end
+
+      # 2147483648    # !!
+      # Long
+      sample({ "a" => 2147483648 }) do
+        expect(subject.get("a")).to be_a(Float).and eq(2.147483648E9)
+      end
+      # Double
+      sample({ "a" => 2.147483648E9 }) do
+        expect(subject.get("a")).to be_a(Float).and eq(2.147483648E9)
+      end
+      # String
+      sample({ "a" => "2147483648" }) do
+        expect(subject.get("a")).to be_a(Float).and eq(2.147483648E9)
+      end
+      sample({ "a" => "2147483648.0" }) do
+        expect(subject.get("a")).to be_a(Float).and eq(2.147483648E9)
+      end
+
+      # 9007199254740993  # !!
+      # Long
+      sample({ "a" => 9007199254740993 }) do
+        expect(subject.get("a")).to be_a(Float).and eq(9.007199254740992E15)
+      end
+      # String
+      sample({ "a" => "9007199254740993" }) do
+        expect(subject.get("a")).to be_a(Float).and eq(9.007199254740992E15)
+      end
+      sample({ "a" => "9007199254740993.0" }) do
+        expect(subject.get("a")).to be_a(Float).and eq(9.007199254740992E15)
+      end
+
+      # 9223372036854775808  # !!
+      # String
+      sample({ "a" => "9223372036854775808" }) do
+        expect(subject.get("a")).to be_a(Float).and eq(9.223372036854775808E18)
+      end
+      sample({ "a" => "9223372036854775808.0" }) do
+        expect(subject.get("a")).to be_a(Float).and eq(9.223372036854775808E18)
+      end
+
+      # 680564693277057720000000000000000000000  # !!
+      # String
+      sample({ "a" => "680564693277057720000000000000000000000" }) do
+        expect(subject.get("a")).to be_a(Float).and eq(6.805646932770577e+38)
+      end
+      sample({ "a" => "680564693277057720000000000000000000000.0" }) do
+        expect(subject.get("a")).to be_a(Float).and eq(6.805646932770577e+38)
+      end
+    end
+
+  end
+
+
   #LOGSTASH-1529
   describe "gsub on a String with dynamic fields (%{}) in pattern" do
     config '
